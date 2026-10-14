@@ -54,7 +54,7 @@ services:
       QGSRV_CACHE_SIZE: '20'
       QGSRV_CACHE_STRICT_CHECK: 'no'
       QGSRV_CACHE_ROOTDIR: /srv/projects
-      QGSRV_LOGGING_LEVEL: DEBUG
+      QGSRV_LOGGING_LEVEL: INFO
       QGSRV_USER: ${LIZMAP_UID}:${LIZMAP_GID}
       QGSRV_SERVER_PLUGINPATH: /srv/plugins
       QGSRV_SERVER_RESTARTMON: /srv/.qgis-restart
@@ -70,11 +70,13 @@ services:
     restart: unless-stopped
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     volumes:
       - { type: volume, source: redis_data, target: /data }
   web:
     image: nginx:alpine
     user: ${LIZMAP_UID}:${LIZMAP_GID}
+    restart: unless-stopped
     volumes:
       - { type: bind, source: "${LIZMAP_DIR}/etc/nginx.conf", target: /etc/nginx/nginx.conf }
       - { type: bind, source: "${LIZMAP_DIR}/var/log/nginx", target: /var/log/nginx }
@@ -87,6 +89,7 @@ services:
         condition: service_healthy
   postgis:
     image: 3liz/postgis:${POSTGIS_VERSION}
+    restart: unless-stopped
     volumes:
       - { type: volume, source: postgis_data, target: /var/lib/postgresql/data }
       - { type: bind, source: "${LIZMAP_DIR}/etc/postgres.init.d", target: /docker-entrypoint-initdb.d }
@@ -107,6 +110,20 @@ services:
       default:
         aliases:
           - ${POSTGIS_ALIAS}
+
+  postgis-collation-fix:
+    image: 3liz/postgis:${POSTGIS_VERSION}
+    depends_on:
+      postgis:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: >
+      sh -c "
+      psql -h ${POSTGIS_ALIAS} -U postgres -d ${POSTGRES_LIZMAP_DB} -c 'ALTER DATABASE \"${POSTGRES_LIZMAP_DB}\" REFRESH COLLATION VERSION;' &&
+      psql -h ${POSTGIS_ALIAS} -U postgres -d ${POSTGRES_LIZMAP_DB} -c 'REINDEX DATABASE \"${POSTGRES_LIZMAP_DB}\";'
+      "
 
 volumes:
     postgis_data:

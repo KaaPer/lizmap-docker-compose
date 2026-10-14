@@ -12,6 +12,9 @@ Run a complete Lizmap stack with test data.
 ❗**If you want to use it on a production server, you will need to make adjustments to meet your
 production requirements.**
 
+## Changes
+- exposed port 8080 by default
+
 ## Requirements
 
 - Docker Engine also knonw as Docker CE

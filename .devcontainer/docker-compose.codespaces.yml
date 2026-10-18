@@ -1,0 +1,25 @@
+# Overrides applied only when running inside GitHub Codespaces / a dev container.
+# Goal: a frictionless online test instance — no forced password change at first login.
+#
+# The base entrypoint, when LIZMAP_ADMIN_DEFAULT_PASSWORD_SOURCE points to a file,
+# creates the admin account with that password and WITHOUT the `--reset` flag
+# (see docker/lizmap-entrypoint.sh in lizmap-web-client). admin.conf is written by
+# .devcontainer/setup.sh into ${LIZMAP_DIR}/etc, mounted read-only at /srv/etc.
+services:
+  lizmap:
+    environment:
+      LIZMAP_ADMIN_DEFAULT_PASSWORD_SOURCE: /srv/etc/admin.conf
+      # Automatically install and activate the modules declared in
+      # var/lizmap-my-packages/composer.json (currently the WebDAV module), so
+      # testers can push/pull QGIS projects over WebDAV out of the box. Left
+      # off by default for plain local setups — see README.md "WebDAV module".
+      LIZMAP_ENABLE_EXTRA_MODULES: '1'
+      # Codespaces terminates HTTPS at its tunnel and forwards plain HTTP to
+      # this container with an internal "Host: localhost:8090" header. Without
+      # telling Lizmap the real public scheme/domain, it generates absolute
+      # URLs (e.g. the WebDAV base URL the QGIS plugin uses to push projects)
+      # pointing at that internal host instead of the Codespace, which then
+      # fails client-side with an SSL handshake error. LIZMAP_PROXYURL_DOMAIN
+      # is computed in .devcontainer/setup.sh from GitHub's own env vars.
+      LIZMAP_PROXYURL_PROTOCOL: https
+      LIZMAP_PROXYURL_DOMAIN: ${LIZMAP_PROXYURL_DOMAIN:-}

@@ -11,6 +11,9 @@ services:
       LIZMAP_CONFIG_INCLUDE: /srv/etc
       PGSERVICEFILE: /srv/etc/pg_service.conf
       PGPASSFILE: /srv/etc/pgpass.conf
+      # Off by default for plain local setups; the Codespaces override turns it on.
+      # See README.md "WebDAV module".
+      LIZMAP_ENABLE_EXTRA_MODULES: ${LIZMAP_ENABLE_EXTRA_MODULES:-0}
     volumes:
       - { type: bind, source: "${LIZMAP_PROJECTS}", target: /srv/projects }
       - { type: bind, source: "${LIZMAP_DIR}/var/lizmap-theme-config", target: /www/lizmap/var/lizmap-theme-config }
@@ -22,6 +25,7 @@ services:
       - { type: bind, source: "${LIZMAP_DIR}/var/lizmap-my-packages", target: /www/lizmap/my-packages }
       - { type: bind, source: "${LIZMAP_DIR}/cache", target: /srv/cache }
       - { type: bind, source: "${LIZMAP_DIR}/etc", target: /srv/etc, read_only: true }
+    entrypoint: ["/srv/etc/module-init.sh"]
     command:
       - php-fpm
     depends_on:
@@ -44,7 +48,7 @@ services:
       3LIZ_SKIP_STATS: 1
       GDAL_CACHEMAX: 2048
       PGSERVICEFILE: /srv/etc/pg_service.conf
-      PGSPASSFILE: /srv/etc/pgpass.conf
+      PGPASSFILE: /srv/etc/pgpass.conf
       QGIS_OPTIONS_PATH: /srv/etc/qgis
       QGIS_SERVER_LIZMAP_REVEAL_SETTINGS: 'yes'
       QGIS_SERVER_TRUST_LAYER_METADATA: 'True'
@@ -69,7 +73,7 @@ services:
       - ${OWS_PORT}:8080
     restart: unless-stopped
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     restart: unless-stopped
     volumes:
       - { type: volume, source: redis_data, target: /data }
